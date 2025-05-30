@@ -3,10 +3,13 @@ import numpy as np
 from collections import deque
 
 count = 0
+j=0
 # Temporal smoothing buffers
 color_history = {}
 size_history = {}
 tracked_objects = {}
+detected_object ={}
+STABILITY_THRESHOLD = 20
 # Read video
 cap = cv2.VideoCapture(0)  # 0 for default camera
 frame_count = 0
@@ -28,7 +31,7 @@ cv2.imshow('Median Background', median_background)
 
 #function to track objects
 def track_objects(contours, frame):
-    global color_history, size_history,tracked_objects
+    global color_history, size_history,tracked_objects,detected_object,j
     objects = []
     #convert contours to list that can be tracked
     for cnt in contours:
@@ -43,75 +46,80 @@ def track_objects(contours, frame):
         return tracked_objects
 
     # Check for object tracking
-    for obj_id, (prev_cx, prev_cy, _) in tracked_objects.items():
+    for obj_id, (prev_cx, prev_cy, _, stable_count) in tracked_objects.items():
         # Find nearest in new frame
         distances = [np.sqrt((cx - prev_cx) ** 2 + (cy - prev_cy) ** 2)
                       for (cx, cy, _) in objects]
         if distances:
             min_idx = np.argmin(distances)
-            if distances[min_idx] < 10:  # Max allowed displacement
-                tracked_objects[obj_id] = (objects[min_idx][0], objects[min_idx][1], True)
+            if distances[min_idx] < 50:  # Max allowed displacement
+                tracked_objects[obj_id] = (objects[min_idx][0], objects[min_idx][1], True,stable_count+1)
                 del objects[min_idx]
-                break  # Exit loop after updating this object
+  # Exit loop after updating this object
             else:
-                tracked_objects[obj_id] = (prev_cx, prev_cy, False)
+                tracked_objects[obj_id] = (prev_cx, prev_cy, False,-1)
 
     for obj_id in list(tracked_objects.keys()):
-        if not tracked_objects[obj_id][-1]:
+        if not tracked_objects[obj_id][2]:
             del tracked_objects[obj_id]  # Remove objects that are not found in current frame
-            del color_history[obj_id]
-            del size_history[obj_id]
+
 
 
     for cx, cy, cnt in objects:
         new_id = max(tracked_objects.keys(), default=0) + 1
-        tracked_objects[new_id] = (cx, cy, True)  # True indicates this is a object that exists in the current frame
+        tracked_objects[new_id] = (cx, cy, True,0)  # True indicates this is a object that exists in the current frame
 
-        # Initialize color buffers
-        hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-        mask = np.zeros(frame.shape[:2], dtype=np.uint8)
-        cv2.drawContours(mask, [cnt], -1, 255, -1)
-        mean_color = cv2.mean(hsv_frame, mask=mask)[:3]
+    for new_id, (cx, cy, _, stable_count) in tracked_objects.items():
+        if stable_count == STABILITY_THRESHOLD:
+            detected_object[j] = (cx, cy)  # True indicates this is a object that exists in the current frame
+            # Initialize color buffers
+            hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+            mask = np.zeros(frame.shape[:2], dtype=np.uint8)
+            cv2.drawContours(mask, [cnt], -1, 255, -1)
+            mean_color = cv2.mean(hsv_frame, mask=mask)[:3]
 
-        color_name = "Unknown"  # Default value
+            color_name = "Unknown"  # Default value
 
-        h = mean_color[0]
-        s = mean_color[1]
-        v = mean_color[2]
+            h = mean_color[0]
+            s = mean_color[1]
+            v = mean_color[2]
 
-        if (10 > h >= 0 and 255 >= s >= 100 and 255 >= v >= 100):
-            color_name = "Red(Lower)"
-        elif (179 > h >= 160 and 255 >= s >= 100 and 255 >= v >= 100):
-            color_name = "Red(Upper)"
-        elif (25 > h >= 10 and 255 >= s >= 100 and 255 >= v >= 100):
-            color_name = "Orange"
-        elif (35 >= h >= 25 and 255 >= s >= 100 and 255 >= v >= 100):
-            color_name = "Yellow"
-        elif (85 >= h >= 36 and 255 >= s >= 100 and 255 >= v >= 100):
-            color_name = "Green"
-        elif (100 >= h >= 86 and 255 >= s >= 100 and 255 >= v >= 100):
-            color_name = "Cyan"
-        elif (130 >= h >= 101 and 255 >= s >= 100 and 255 >= v >= 100):
-            color_name = "Blue"
-        elif (160 >= h >= 131 and 255 >= s >= 100 and 255 >= v >= 100):
-            color_name = "Purple"
-        elif (170 >= h >= 145 and 255 >= s >= 50 and 255 >= v >= 150):
-            color_name = "Pink"
-        elif (20 >= h >= 10 and 255 >= s >= 100 and 200 >= v >= 20):
-            color_name = "Brown"
-        elif (180 >= h >= 0 and 30 >= s >= 0 and 255 >= v >= 200):
-            color_name = "White"
-        elif (180 >= h >= 0 and 50 >= s >= 0 and 200 >= v >= 50):
-            color_name = "Grey"
-        elif (180 >= h >= 0 and 255 >= s >= 0 and 50 >= v >= 0):
-            color_name = "Black"
+            if (10 > h >= 0 and 255 >= s >= 100 and 255 >= v >= 100):
+                color_name = "Red(Lower)"
+            elif (179 > h >= 160 and 255 >= s >= 100 and 255 >= v >= 100):
+                color_name = "Red(Upper)"
+            elif (25 > h >= 10 and 255 >= s >= 100 and 255 >= v >= 100):
+                color_name = "Orange"
+            elif (35 >= h >= 25 and 255 >= s >= 100 and 255 >= v >= 100):
+                color_name = "Yellow"
+            elif (85 >= h >= 36 and 255 >= s >= 100 and 255 >= v >= 100):
+                color_name = "Green"
+            elif (100 >= h >= 86 and 255 >= s >= 100 and 255 >= v >= 100):
+                color_name = "Cyan"
+            elif (130 >= h >= 101 and 255 >= s >= 100 and 255 >= v >= 100):
+                color_name = "Blue"
+            elif (160 >= h >= 131 and 255 >= s >= 100 and 255 >= v >= 100):
+                color_name = "Purple"
+            elif (170 >= h >= 145 and 255 >= s >= 50 and 255 >= v >= 150):
+                color_name = "Pink"
+            elif (20 >= h >= 10 and 255 >= s >= 100 and 200 >= v >= 20):
+                color_name = "Brown"
+            elif (180 >= h >= 0 and 30 >= s >= 0 and 255 >= v >= 200):
+                color_name = "White"
+            elif (180 >= h >= 0 and 50 >= s >= 0 and 200 >= v >= 50):
+                color_name = "Grey"
+            elif (180 >= h >= 0 and 255 >= s >= 0 and 50 >= v >= 0):
+                color_name = "Black"
 
-        color_history[new_id] = color_name
+            color_history[j] = (color_name,mean_color)
 
-        
-        area = cv2.contourArea(cnt)
-        perimeter = cv2.arcLength(cnt, True)
-        size_history[new_id] = (area, perimeter)
+            area = cv2.contourArea(cnt)
+            perimeter = cv2.arcLength(cnt, True)
+            size_history[j] = (area, perimeter)
+            j += 1
+            
+        else:
+            continue
 
     return tracked_objects
 
@@ -163,10 +171,10 @@ while frame_count > 119:
     key = cv2.waitKey(1)
     if key == 13:
         break
-    print("Tracked Objects:", tracked_objects)
+    #print("Tracked Objects:", tracked_objects])
+    print("Detected Objects:", detected_object)
     print("Color History:", color_history)
     print("Size History:", size_history)
-    print("Frame Count:", frame_count)
     print("\n\n")
     frame_count += 1
 cap.release()
