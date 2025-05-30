@@ -1,32 +1,20 @@
 import cv2
 import numpy as np
 
-# --- Define a class to track objects ---
-class TrackedObject:
-    def __init__(self, bbox, obj_id):
-        self.bbox = bbox  # (x, y, w, h)
-        self.frames_stable = 1
-        self.color = None
-        self.id = obj_id
+tracked_objects = {}  # key: ID, value: {'pos': (x, y, w, h), 'stable_count': int, 'mean_color': (B, G, R)}
+next_id = 0
+STABILITY_THRESHOLD = 12
+AREA_THRESHOLD = 500
 
-    def update(self, new_bbox):
-        self.bbox = new_bbox
-        self.frames_stable += 1
+def is_same_position(pos1, pos2, tolerance=10):
+    x1, y1, w1, h1 = pos1
+    x2, y2, w2, h2 = pos2
+    return abs(x1 - x2) < tolerance and abs(y1 - y2) < tolerance
 
-# --- Helper function to check similarity between bounding boxes ---
-def is_similar(bbox1, bbox2, thresh=20):
-    x1, y1, w1, h1 = bbox1
-    x2, y2, w2, h2 = bbox2
-    return (
-        abs(x1 - x2) < thresh and abs(y1 - y2) < thresh and
-        abs(w1 - w2) < thresh and abs(h1 - h2) < thresh
-    )
-
-# --- Initialize ---
 cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
-background_frames = []
 
-# Collect first 120 frames for median background
+# Collect first 120 frames to calculate background
+background_frames = []
 for _ in range(120):
     ret, frame = cap.read()
     if not ret:
@@ -35,10 +23,6 @@ for _ in range(120):
 
 median_background = np.median(background_frames, axis=0).astype(np.uint8)
 cv2.imshow('Median Background', median_background)
-
-# Tracking variables
-tracked_objects = []
-next_id = 0
 
 while cap.isOpened():
     ret, frame = cap.read()
@@ -51,53 +35,90 @@ while cap.isOpened():
     _, foreground_mask = cv2.threshold(blurred, 30, 255, cv2.THRESH_BINARY)
 
     contours, _ = cv2.findContours(foreground_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    valid_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > 500]
-    current_bboxes = [cv2.boundingRect(cnt) for cnt in valid_contours]
 
-    # --- Match current bounding boxes to tracked objects ---
-    updated_ids = set()
-    for curr_bbox in current_bboxes:
-        matched = False
-        for obj in tracked_objects:
-            if is_similar(obj.bbox, curr_bbox):
-                obj.update(curr_bbox)
-                updated_ids.add(obj.id)
-                matched = True
+    updated_objects = {}
+    display_box_index = 0
+
+    for cnt in contours:
+        area = cv2.contourArea(cnt)
+        if area < AREA_THRESHOLD:
+            continue
+
+        (x, y, w, h) = cv2.boundingRect(cnt)
+        current_pos = (x, y, w, h)
+        matched_id = None
+
+        # Match contour to existing tracked object
+        for obj_id, data in tracked_objects.items():
+            if is_same_position(current_pos, data['pos']):
+                matched_id = obj_id
                 break
-        if not matched:
-            tracked_objects.append(TrackedObject(curr_bbox, next_id))
+
+        if matched_id is not None:
+            data = tracked_objects[matched_id]
+            stable_count = data['stable_count'] + 1 if is_same_position(current_pos, data['pos']) else 0
+            mean_color = data['mean_color']
+
+            if stable_count < STABILITY_THRESHOLD:
+                # Recalculate mean color
+                mask = np.zeros(frame.shape[:2], dtype=np.uint8)
+                cv2.drawContours(mask, [cnt], -1, 255, -1)
+                mean_color = cv2.mean(frame, mask=mask)[:3]
+
+            updated_objects[matched_id] = {
+                'pos': current_pos,
+                'stable_count': stable_count,
+                'mean_color': mean_color
+            }
+        else:
+            # New object
+            mask = np.zeros(frame.shape[:2], dtype=np.uint8)
+            cv2.drawContours(mask, [cnt], -1, 255, -1)
+            mean_color = cv2.mean(frame, mask=mask)[:3]
+
+            updated_objects[next_id] = {
+                'pos': current_pos,
+                'stable_count': 0,
+                'mean_color': mean_color
+            }
+            matched_id = next_id
             next_id += 1
 
-    # --- Remove stale objects ---
-    tracked_objects = [obj for obj in tracked_objects if obj.frames_stable >= 10 or obj.id in updated_ids]
+    # Draw everything
+    for obj_id, data in updated_objects.items():
+        (x, y, w, h) = data['pos']
+        stable_count = data['stable_count']
+        mean_color = tuple(map(int, data['mean_color']))
 
-    # --- Draw stable objects and display mean color ---
-    count = 0
-    for obj in tracked_objects:
-        if obj.frames_stable >= 10:
-            x, y, w, h = obj.bbox
+        # Draw persistent bounding box and label
+        area = w * h
+        if area < 1000:
+            color = (255, 0, 0)
+            label = "Small"
+        elif area < 2000:
+            color = (0, 255, 0)
+            label = "Medium"
+        else:
+            color = (0, 0, 255)
+            label = "Large"
 
-            if obj.color is None:
-                mask = np.zeros(frame.shape[:2], dtype=np.uint8)
-                cv2.rectangle(mask, (x, y), (x + w, y + h), 255, -1)
-                mean_color = cv2.mean(frame, mask=mask)[:3]
-                obj.color = tuple(map(int, mean_color))
+        cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
+        cv2.putText(frame, f"{label}, box {obj_id}", (x, y), 1, 1, (255, 255, 0))
 
-            cv2.rectangle(frame, (x, y), (x + w, y + h), obj.color, 2)
-            cv2.putText(frame, f"Obj {obj.id} (Stable)", (x, y - 10), 1, 1, (255, 255, 0), 2)
+        # Only update mean color box if object is not too stable
+        if stable_count < STABILITY_THRESHOLD:
+            top_left = (0, 0 + 50 * display_box_index)
+            bottom_right = (50, 50 + 50 * display_box_index)
+            cv2.rectangle(frame, top_left, bottom_right, mean_color, -1)
+            cv2.putText(frame, f"box {obj_id}", (55, 50 + 50 * display_box_index), 1, 1, (255, 255, 0))
+            display_box_index += 1
 
-            # Draw color patch on side
-            rect_top_left = (0, 0 + 50 * count)
-            rect_bottom_right = (50, 50 + 50 * count)
-            cv2.rectangle(frame, rect_top_left, rect_bottom_right, obj.color, thickness=-1)
-            cv2.putText(frame, f"Obj {obj.id}", (55, 40 + 50 * count), 1, 1, (255, 255, 0))
-            count += 1
-
-    # --- Show frames ---
+    tracked_objects = updated_objects
     cv2.imshow('Foreground', frame)
     cv2.imshow('Foreground Mask', foreground_mask)
 
-    if cv2.waitKey(1) == 13:  # Enter key to break
+    key = cv2.waitKey(1)
+    if key == 13:  # Enter key to exit
         break
 
 cap.release()
