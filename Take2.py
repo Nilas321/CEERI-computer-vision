@@ -2,8 +2,8 @@ import cv2
 import numpy as np
 from collections import deque
 
-count = 0
 j=0
+_id_counter = 1
 # Temporal smoothing buffers
 color_history = {}
 size_history = {}
@@ -31,7 +31,7 @@ cv2.imshow('Median Background', median_background)
 
 #function to track objects
 def track_objects(contours, frame):
-    global color_history, size_history,tracked_objects,detected_object,j
+    global color_history, size_history,tracked_objects,detected_object,j,_id_counter
     objects = []
     #convert contours to list that can be tracked
     for cnt in contours:
@@ -46,18 +46,22 @@ def track_objects(contours, frame):
         return tracked_objects
 
     # Check for object tracking
-    for obj_id, (prev_cx, prev_cy, _, stable_count) in tracked_objects.items():
+    for obj_id, [prev_cx, prev_cy, _, stable_count,cnt] in tracked_objects.items():
         # Find nearest in new frame
         distances = [np.sqrt((cx - prev_cx) ** 2 + (cy - prev_cy) ** 2)
                       for (cx, cy, _) in objects]
         if distances:
             min_idx = np.argmin(distances)
-            if distances[min_idx] < 50:  # Max allowed displacement
-                tracked_objects[obj_id] = (objects[min_idx][0], objects[min_idx][1], True,stable_count+1)
+            if distances[min_idx] < 20:  # Max allowed displacement
+                new_cx, new_cy, new_cnt = objects[min_idx]
+                tracked_objects[obj_id][0] = new_cx  # Update X
+                tracked_objects[obj_id][1] = new_cy  # Update Y
+                tracked_objects[obj_id][3] += 1      # Increment stability count
+                tracked_objects[obj_id][4] = new_cnt  # Update contour
                 del objects[min_idx]
   # Exit loop after updating this object
             else:
-                tracked_objects[obj_id] = (prev_cx, prev_cy, False,-1)
+                tracked_objects[obj_id] = [prev_cx, prev_cy, False,-1,None]
 
     for obj_id in list(tracked_objects.keys()):
         if not tracked_objects[obj_id][2]:
@@ -66,11 +70,14 @@ def track_objects(contours, frame):
 
 
     for cx, cy, cnt in objects:
-        new_id = max(tracked_objects.keys(), default=0) + 1
-        tracked_objects[new_id] = (cx, cy, True,0)  # True indicates this is a object that exists in the current frame
+        new_id = _id_counter
+        _id_counter += 1
+        tracked_objects[new_id] = [cx, cy, True, 0, cnt]  # Added contour storage
 
-    for new_id, (cx, cy, _, stable_count) in tracked_objects.items():
+    for new_id, [cx, cy, _, stable_count,cnt] in tracked_objects.items():
         if stable_count == STABILITY_THRESHOLD:
+            if cnt is None:
+                    continue
             detected_object[j] = (cx, cy)  # True indicates this is a object that exists in the current frame
             # Initialize color buffers
             hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -146,7 +153,9 @@ while frame_count > 119:
             valid_contours.append(cnt)
     # Track objects
     tracked_objects = track_objects(valid_contours, frame)
+    count = 0
     for cnt in valid_contours:
+        count += 1
     #for cnt in valid_contours:
         (x, y, w, h) = cv2.boundingRect(cnt)
         area = cv2.contourArea(cnt)
@@ -159,10 +168,6 @@ while frame_count > 119:
         else:
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
             cv2.putText(frame,"Large,box number" + str(count),(x,y),1,1,(255,255,0))
-    # Draw a green bounding rectangle around the detected contour in the ROI
-        (x, y, w, h) = cv2.boundingRect(cnt)
-        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-    
 
     # Display the original frame with detected foreground
     cv2.imshow('Foreground', frame)
