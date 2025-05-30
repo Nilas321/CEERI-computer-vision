@@ -44,14 +44,47 @@ while cap.isOpened():
             valid_contours.append(cnt)
 
     for cnt in valid_contours:
+
+        #Convert to HSV
+        hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
         # Create a mask for the current contour
         mask = np.zeros(frame.shape[:2], dtype=np.uint8)
         cv2.drawContours(mask, [cnt], -1, 255, -1)  # Fill the contour area with white
         
         # Calculate the mean color within the contour area of the ROI
-        mean_color = cv2.mean(frame, mask=mask)[:3]
-        print(f"Mean color in rectangle {count}: {mean_color}")
-
+        mean_color = cv2.mean(hsv_frame, mask=mask)[:3]
+        #print(f"Mean color in rectangle {count}: {mean_color}")
+        h=mean_color[0]
+        s=mean_color[1]
+        v=mean_color[2]
+        if (10>h>=0 and 255>=s>=100 and 255>=v>=100):
+            print(f"Mean Colour in the rectange {count}: Red(Lower)")
+        elif (179>h>=160 and 255>=s>=100 and 255>=v>=100):
+            print(f"Mean Colour in the rectange {count}: Red(Upper)")
+        elif (25>h>=10 and 255>=s>=100 and 255>=v>=100):
+            print(f"Mean Colour in the rectange {count}: Orange")
+        elif (35>=h>=25 and 255>=s>=100 and 255>=v>=100):
+            print(f"Mean Colour in the rectange {count}: Yellow")
+        elif (85>=h>=36 and 255>=s>=100 and 255>=v>=100):
+            print(f"Mean Colour in the rectange {count}: Green")
+        elif (100>=h>=86 and 255>=s>=100 and 255>=v>=100):
+            print(f"Mean Colour in the rectange {count}: Cyan")
+        elif (130>=h>=101 and 255>=s>=100 and 255>=v>=100):
+            print(f"Mean Colour in the rectange {count}: Blue")
+        elif (160>=h>=131 and 255>=s>=100 and 255>=v>=100):
+            print(f"Mean Colour in the rectange {count}: Purple")
+        elif (170>=h>=145 and 255>=s>=50 and 255>=v>=150):
+            print(f"Mean Colour in the rectange {count}: Pink")
+        elif (20>=h>=10 and 255>=s>=100 and 200>=v>=20):
+            print(f"Mean Colour in the rectange {count}: Brown")
+        elif (180>=h>=0 and 30>=s>=0 and 255>=v>=200):
+            print(f"Mean Colour in the rectange {count}: White")
+        elif (180>=h>=0 and 50>=s>=0 and 200>=v>=50):
+            print(f"Mean Colour in the rectange {count}: Grey")
+        elif (180>=h>=0 and 255>=s>=0 and 50>=v>=0):
+            print(f"Mean Colour in the rectange {count}: Black")
+        
         # Draw a filled rectangle (50x50) at the top-left corner of the frame,
         # colored with the mean color found in the contour area
         rect_top_left = (0, 0 + 50 * count)
