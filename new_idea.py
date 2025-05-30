@@ -48,21 +48,24 @@ while cap.isOpened():
         current_pos = (x, y, w, h)
         matched_id = None
 
-        # Match contour to existing tracked object
         for obj_id, data in tracked_objects.items():
             if is_same_position(current_pos, data['pos']):
                 matched_id = obj_id
                 break
 
-        if matched_id is not None:
-            data = tracked_objects[matched_id]
-            stable_count = data['stable_count'] + 1 if is_same_position(current_pos, data['pos']) else 0
-            mean_color = data['mean_color']
+        # Create mask for mean color calc
+        mask = np.zeros(frame.shape[:2], dtype=np.uint8)
+        cv2.drawContours(mask, [cnt], -1, 255, -1)
 
-            if stable_count < STABILITY_THRESHOLD:
-                # Recalculate mean color
-                mask = np.zeros(frame.shape[:2], dtype=np.uint8)
-                cv2.drawContours(mask, [cnt], -1, 255, -1)
+        if matched_id is not None:
+            old_data = tracked_objects[matched_id]
+            stable = is_same_position(current_pos, old_data['pos'])
+            stable_count = old_data['stable_count'] + 1 if stable else 0
+
+            # Update only after stability threshold
+            if stable_count >= STABILITY_THRESHOLD:
+                mean_color = old_data['mean_color']
+            else:
                 mean_color = cv2.mean(frame, mask=mask)[:3]
 
             updated_objects[matched_id] = {
@@ -72,10 +75,7 @@ while cap.isOpened():
             }
         else:
             # New object
-            mask = np.zeros(frame.shape[:2], dtype=np.uint8)
-            cv2.drawContours(mask, [cnt], -1, 255, -1)
             mean_color = cv2.mean(frame, mask=mask)[:3]
-
             updated_objects[next_id] = {
                 'pos': current_pos,
                 'stable_count': 0,
@@ -84,34 +84,37 @@ while cap.isOpened():
             matched_id = next_id
             next_id += 1
 
-    # Draw everything
+    # Draw objects
     for obj_id, data in updated_objects.items():
         (x, y, w, h) = data['pos']
-        stable_count = data['stable_count']
         mean_color = tuple(map(int, data['mean_color']))
+        stable_count = data['stable_count']
 
-        # Draw persistent bounding box and label
-        area = w * h
-        if area < 1000:
-            color = (255, 0, 0)
-            label = "Small"
-        elif area < 2000:
-            color = (0, 255, 0)
-            label = "Medium"
+        # Area-based size label (only after stability)
+        if stable_count >= STABILITY_THRESHOLD:
+            area = w * h
+            if area < 1000:
+                color = (255, 0, 0)
+                label = "Small"
+            elif area < 2000:
+                color = (0, 255, 0)
+                label = "Medium"
+            else:
+                color = (0, 0, 255)
+                label = "Large"
         else:
-            color = (0, 0, 255)
-            label = "Large"
+            color = (0, 255, 255)  # Yellow for unstable
+            label = "Detecting..."
 
         cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
         cv2.putText(frame, f"{label}, box {obj_id}", (x, y), 1, 1, (255, 255, 0))
 
-        # Only update mean color box if object is not too stable
-        if stable_count < STABILITY_THRESHOLD:
-            top_left = (0, 0 + 50 * display_box_index)
-            bottom_right = (50, 50 + 50 * display_box_index)
-            cv2.rectangle(frame, top_left, bottom_right, mean_color, -1)
-            cv2.putText(frame, f"box {obj_id}", (55, 50 + 50 * display_box_index), 1, 1, (255, 255, 0))
-            display_box_index += 1
+        # Display mean color box
+        top_left = (0, 0 + 50 * display_box_index)
+        bottom_right = (50, 50 + 50 * display_box_index)
+        cv2.rectangle(frame, top_left, bottom_right, mean_color, -1)
+        cv2.putText(frame, f"box {obj_id}", (55, 50 + 50 * display_box_index), 1, 1, (255, 255, 0))
+        display_box_index += 1
 
     tracked_objects = updated_objects
     cv2.imshow('Foreground', frame)
