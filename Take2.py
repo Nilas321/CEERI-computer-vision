@@ -43,26 +43,71 @@ def track_objects(contours, frame):
         return tracked_objects
 
     # Check for object tracking
-    for obj_id, (prev_cx, prev_cy) in tracked_objects.items():
+    for obj_id, (prev_cx, prev_cy, _) in tracked_objects.items():
         # Find nearest in new frame
         distances = [np.sqrt((cx - prev_cx) ** 2 + (cy - prev_cy) ** 2)
                       for (cx, cy, _) in objects]
         if distances:
             min_idx = np.argmin(distances)
-            if distances[min_idx] < 50:  # Max allowed displacement
-                tracked_objects[obj_id] = objects[min_idx][:2]
+            if distances[min_idx] < 10:  # Max allowed displacement
+                tracked_objects[obj_id] = (objects[min_idx][0], objects[min_idx][1], True)
                 del objects[min_idx]
+                break  # Exit loop after updating this object
+            else:
+                tracked_objects[obj_id] = (prev_cx, prev_cy, False)
+
+    for obj_id in list(tracked_objects.keys()):
+        if not tracked_objects[obj_id][-1]:
+            del tracked_objects[obj_id]  # Remove objects that are not found in current frame
+            del color_history[obj_id]
+            del size_history[obj_id]
+
 
     for cx, cy, cnt in objects:
         new_id = max(tracked_objects.keys(), default=0) + 1
-        tracked_objects[new_id] = (cx, cy)
+        tracked_objects[new_id] = (cx, cy, True)  # True indicates this is a object that exists in the current frame
 
         # Initialize color buffers
+        hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         mask = np.zeros(frame.shape[:2], dtype=np.uint8)
         cv2.drawContours(mask, [cnt], -1, 255, -1)
-        mean_color = cv2.mean(frame, mask=mask)[:3]
-        color_history[new_id] = mean_color
-        avg_color = np.mean(color_history[new_id], axis=0)
+        mean_color = cv2.mean(hsv_frame, mask=mask)[:3]
+
+        color_name = "Unknown"  # Default value
+
+        h = mean_color[0]
+        s = mean_color[1]
+        v = mean_color[2]
+
+        if (10 > h >= 0 and 255 >= s >= 100 and 255 >= v >= 100):
+            color_name = "Red(Lower)"
+        elif (179 > h >= 160 and 255 >= s >= 100 and 255 >= v >= 100):
+            color_name = "Red(Upper)"
+        elif (25 > h >= 10 and 255 >= s >= 100 and 255 >= v >= 100):
+            color_name = "Orange"
+        elif (35 >= h >= 25 and 255 >= s >= 100 and 255 >= v >= 100):
+            color_name = "Yellow"
+        elif (85 >= h >= 36 and 255 >= s >= 100 and 255 >= v >= 100):
+            color_name = "Green"
+        elif (100 >= h >= 86 and 255 >= s >= 100 and 255 >= v >= 100):
+            color_name = "Cyan"
+        elif (130 >= h >= 101 and 255 >= s >= 100 and 255 >= v >= 100):
+            color_name = "Blue"
+        elif (160 >= h >= 131 and 255 >= s >= 100 and 255 >= v >= 100):
+            color_name = "Purple"
+        elif (170 >= h >= 145 and 255 >= s >= 50 and 255 >= v >= 150):
+            color_name = "Pink"
+        elif (20 >= h >= 10 and 255 >= s >= 100 and 200 >= v >= 20):
+            color_name = "Brown"
+        elif (180 >= h >= 0 and 30 >= s >= 0 and 255 >= v >= 200):
+            color_name = "White"
+        elif (180 >= h >= 0 and 50 >= s >= 0 and 200 >= v >= 50):
+            color_name = "Grey"
+        elif (180 >= h >= 0 and 255 >= s >= 0 and 50 >= v >= 0):
+            color_name = "Black"
+
+        color_history[new_id] = color_name
+
         
         area = cv2.contourArea(cnt)
         perimeter = cv2.arcLength(cnt, True)
