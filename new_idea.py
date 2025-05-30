@@ -109,13 +109,52 @@ while cap.isOpened():
         cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
         cv2.putText(frame, f"{label}, box {obj_id}", (x, y), 1, 1, (255, 255, 0))
 
-        # Display mean color box
-        top_left = (0, 0 + 50 * display_box_index)
+        #Convert to HSV
+        hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
+        # Create a mask for the current contour
+        mask = np.zeros(frame.shape[:2], dtype=np.uint8)
+        cv2.drawContours(mask, [cnt], -1, 255, -1)  # Fill the contour area with white
+        
+        # Calculate the mean color within the contour area of the ROI
+        mean_color = cv2.mean(hsv_frame, mask=mask)[:3]
+        #print(f"Mean color in rectangle {count}: {mean_color}")
+        h=mean_color[0]
+        s=mean_color[1]
+        v=mean_color[2]
+        if (10>h>=0 and 255>=s>=100 and 255>=v>=100):
+            print(f"Mean Colour in the rectange {obj_id}: Red(Lower)")
+        elif (179>h>=160 and 255>=s>=100 and 255>=v>=100):
+            print(f"Mean Colour in the rectange {obj_id}: Red(Upper)")
+        elif (25>h>=10 and 255>=s>=100 and 255>=v>=100):
+            print(f"Mean Colour in the rectange {obj_id}: Orange")
+        elif (35>=h>=25 and 255>=s>=100 and 255>=v>=100):
+            print(f"Mean Colour in the rectange {obj_id}: Yellow")
+        elif (85>=h>=36 and 255>=s>=100 and 255>=v>=100):
+            print(f"Mean Colour in the rectange {obj_id}: Green")
+        elif (100>=h>=86 and 255>=s>=100 and 255>=v>=100):
+            print(f"Mean Colour in the rectange {obj_id}: Cyan")
+        elif (130>=h>=101 and 255>=s>=100 and 255>=v>=100):
+            print(f"Mean Colour in the rectange {obj_id}: Blue")
+        elif (160>=h>=131 and 255>=s>=100 and 255>=v>=100):
+            print(f"Mean Colour in the rectange {obj_id}: Purple")
+        elif (170>=h>=145 and 255>=s>=50 and 255>=v>=150):
+            print(f"Mean Colour in the rectange {obj_id}: Pink")
+        elif (20>=h>=10 and 255>=s>=100 and 200>=v>=20):
+            print(f"Mean Colour in the rectange {obj_id}: Brown")
+        elif (180>=h>=0 and 30>=s>=0 and 255>=v>=200):
+            print(f"Mean Colour in the rectange {obj_id}: White")
+        elif (180>=h>=0 and 50>=s>=0 and 200>=v>=50):
+            print(f"Mean Colour in the rectange {obj_id}: Grey")
+        elif (180>=h>=0 and 255>=s>=0 and 50>=v>=0):
+            print(f"Mean Colour in the rectange {obj_id}: Black")
+
+       # Display mean color box
+        '''top_left = (0, 0 + 50 * display_box_index)
         bottom_right = (50, 50 + 50 * display_box_index)
         cv2.rectangle(frame, top_left, bottom_right, mean_color, -1)
         cv2.putText(frame, f"box {obj_id}", (55, 50 + 50 * display_box_index), 1, 1, (255, 255, 0))
-        display_box_index += 1
-
+        display_box_index += 1'''
     tracked_objects = updated_objects
     cv2.imshow('Foreground', frame)
     cv2.imshow('Foreground Mask', foreground_mask)
