@@ -91,13 +91,13 @@ def track_objects(contours, frame):
             s = mean_color[1]
             v = mean_color[2]
 
-            if (10 > h >= 0 and 255 >= s >= 100 and 255 >= v >= 100):
+            if (10 >= h >= 0 and 255 >= s >= 100 and 255 >= v >= 100):
                 color_name = "Red(Lower)"
             elif (179 > h >= 160 and 255 >= s >= 100 and 255 >= v >= 100):
                 color_name = "Red(Upper)"
-            elif (25 > h >= 10 and 255 >= s >= 100 and 255 >= v >= 100):
+            elif (25 >= h >= 11 and 255 >= s >= 100 and 255 >= v >= 100):
                 color_name = "Orange"
-            elif (35 >= h >= 25 and 255 >= s >= 100 and 255 >= v >= 100):
+            elif (35 >= h >= 26 and 255 >= s >= 100 and 255 >= v >= 100):
                 color_name = "Yellow"
             elif (85 >= h >= 36 and 255 >= s >= 100 and 255 >= v >= 100):
                 color_name = "Green"
@@ -105,17 +105,17 @@ def track_objects(contours, frame):
                 color_name = "Cyan"
             elif (130 >= h >= 101 and 255 >= s >= 100 and 255 >= v >= 100):
                 color_name = "Blue"
-            elif (160 >= h >= 131 and 255 >= s >= 100 and 255 >= v >= 100):
+            elif (145 >= h >= 131 and 255 >= s >= 100 and 255 >= v >= 100):
                 color_name = "Purple"
-            elif (170 >= h >= 145 and 255 >= s >= 50 and 255 >= v >= 150):
+            elif (159 >= h >= 146 and 255 >= s >= 100 and 255 >= v >= 100):
                 color_name = "Pink"
-            elif (20 >= h >= 10 and 255 >= s >= 100 and 200 >= v >= 20):
+            elif (20 >= h >= 10 and 255 >= s >= 100 and 150 >= v >= 20):
                 color_name = "Brown"
-            elif (180 >= h >= 0 and 30 >= s >= 0 and 255 >= v >= 200):
+            elif (179 >= h >= 0 and 30 >= s >= 0 and 255 >= v >= 200):
                 color_name = "White"
-            elif (180 >= h >= 0 and 50 >= s >= 0 and 200 >= v >= 50):
+            elif (179 >= h >= 0 and 50 >= s >= 0 and 200 >= v >= 50):
                 color_name = "Grey"
-            elif (180 >= h >= 0 and 255 >= s >= 0 and 50 >= v >= 0):
+            elif (179 >= h >= 0 and 255 >= s >= 0 and 50 >= v >= 0):
                 color_name = "Black"
 
             color_history[j] = (color_name,mean_color)
