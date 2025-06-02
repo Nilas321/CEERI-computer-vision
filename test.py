@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 #capture video
-cap=cv2.VideoCapture(0) #Opens the webcam. The argument 0 selects the default camera.
+cap=cv2.VideoCapture(0,cv2.CAP_DSHOW) #Opens the webcam. The argument 0 selects the default camera.
 
 while True:
     _,frame=cap.read() #capture frames from a video source_Returns a tuple containing two values
@@ -24,7 +24,7 @@ while True:
         mask = np.zeros(req_area.shape[:2], dtype=np.uint8)
         cv2.drawContours(mask, [cnt], -1, 255, -1)  # Fill the rectangle area with white
         mean_color = cv2.mean(req_area, mask=mask)[:3]
-        print(f"Mean color in rectangle: {mean_color}")
+        #print(f"Mean color in rectangle: {mean_color}")
          # Define rectangle size and position (top-left corner)
         rect_top_left = (0, 0)
         rect_bottom_right = (50, 50)  # 50x50 rectangle at the top-left edge
@@ -37,16 +37,16 @@ while True:
     
     #show video
     cv2.imshow("Frame", frame)
-    cv2.imshow("Required Area", req_area)
-    cv2.imshow("Binarized Frame", threshold)
+    #cv2.imshow("Required Area", req_area)
+    #cv2.imshow("Binarized Frame", threshold)
 
-    '''def click_event(event, x, y, flags, param):       THIS IS JUST TO GET THE CO-ORDINATE SOF THE REQUIRED AREA!
+    def click_event(event, x, y, flags, param):      # THIS IS JUST TO GET THE CO-ORDINATE SOF THE REQUIRED AREA!
         if event == cv2.EVENT_LBUTTONDOWN:
             print(f'Coordinates: ({x}, {y})')
         # You can also draw a circle or mark the point on the image, if needed
         cv2.circle(frame, (x, y), 3, (0, 0, 255), -1) # Mark the clicked point
     cv2.imshow('image', frame)
-    cv2.setMouseCallback('image', click_event)'''
+    cv2.setMouseCallback('image', click_event)
 
     key=cv2.waitKey(1) #wait for 1ms to press a key
 

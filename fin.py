@@ -11,7 +11,7 @@ tracked_objects = {}
 detected_object ={}
 STABILITY_THRESHOLD = 30
 # Read video
-cap = cv2.VideoCapture(0)  # 0 for default camera
+cap = cv2.VideoCapture(0,cv2.CAP_DSHOW)  # 0 for default camera
 frame_count = 0
 
 # Collect first 120 frames
@@ -123,15 +123,63 @@ def track_objects(contours, frame):
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
             (x, y, w, h) = cv2.boundingRect(cnt)
             area = cv2.contourArea(cnt)
-            if 1500<area<2000:
+
+            #Let y be the variable for length across conveyer belt
+            #y=0 to y=y1 - Lane 1
+            #y=y1 to y=y2 - Lane 2
+            #y=y2 to y=y3 - Lane 3
+            #y=y3 to y=y4 - Lane 4
+
+            x1=147
+            x2=295
+            x3=436
+            x4=546
+
+            lane=[]
+            x_end=x+w
+            if x1>x>=27:
+                if x1>x_end:
+                    lane.append(1)
+                elif x2>x_end:
+                    lane.append(1)
+                    lane.append(2)
+                elif x3>x_end:
+                    lane.append(1)
+                    lane.append(2)
+                    lane.append(3)
+                else:
+                    lane.append(1)
+                    lane.append(2)
+                    lane.append(3)
+                    lane.append(4)
+            elif x2>x:
+                if x2>x_end:
+                    lane.append(2)
+                elif x3>x_end:
+                    lane.append(2)
+                    lane.append(3)
+                else:
+                    lane.append(2)
+                    lane.append(3)
+                    lane.append(4)
+            elif x3>x:
+                if x3>x_end:
+                    lane.append(3)
+                else:
+                    lane.append(3)
+                    lane.append(4)
+            else:
+                lane.append(4)
+
+            if 500<area<1000:
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
-                cv2.putText(frame,"Small,colour: " + color_name,(x,y-10),cv2.FONT_HERSHEY_SIMPLEX,0.5,(255,255,0))
-            elif 2000<area<6000:
+                cv2.putText(frame,"Small " + "Lane: " + str(lane) + " Colour: " + color_name,(x,y-10),cv2.FONT_HERSHEY_SIMPLEX,0.5,(255,255,0))
+            elif 1000<area<2000:
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                cv2.putText(frame,"Medium,colour: " + color_name,(x,y -10),cv2.FONT_HERSHEY_SIMPLEX,0.5,(255,255,0))
+                cv2.putText(frame,"Medium " + "Lane: " + str(lane) + " Colour: " + color_name,(x,y -10),cv2.FONT_HERSHEY_SIMPLEX,0.5,(255,255,0))
             else:
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
-                cv2.putText(frame,"Large,colour: " + color_name,(x,y -10),cv2.FONT_HERSHEY_SIMPLEX,0.5,(255,255,0))
+                cv2.putText(frame,"Large " + "Lane: " + str(lane) + " Colour: " + color_name,(x,y -10),cv2.FONT_HERSHEY_SIMPLEX,0.5,(255,255,0))
 
             
         else:
@@ -176,10 +224,9 @@ while frame_count > 119:
         break
     #print("Tracked Objects:", tracked_objects])
     #print("Detected Objects:", detected_object)
-    #print("Color History:", color_history)
-    #print("Size History:", size_history)
-    #print("\n\n")
+    print("Color History:", color_history)
+    print("Size History:", size_history)
+    print("\n\n")
     frame_count += 1
 cap.release()
 cv2.destroyAllWindows()
-
