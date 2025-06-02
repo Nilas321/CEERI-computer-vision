@@ -1,112 +1,229 @@
 import cv2
 import numpy as np
+from collections import deque
 
+j=0
+_id_counter = 1
+# Temporal smoothing buffers
+color_history = {}
+size_history = {}
+tracked_objects = {}
+detected_object ={}
+STABILITY_THRESHOLD = 20
 # Read video
-cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)  # 0 for default camera
+cap = cv2.VideoCapture(0)  # 0 for default camera
+frame_count = 0
 
-# Collect first 120 frames to estimate the background
+# Collect first 120 frames
 background_frames = []
 for _ in range(120):
     ret, frame = cap.read()
     if not ret:
         break
     background_frames.append(frame)
+    frame_count += 1
 
 # Compute median background
 median_background = np.median(background_frames, axis=0).astype(np.uint8)
+
+#display the median background
 cv2.imshow('Median Background', median_background)
 
-# Object tracking setup
-tracked_objects = {}  # id: {'contour': cnt, 'position': (x, y), 'missed_frames': 0}
-next_id = 0
-max_missed_frames = 10
+#function to track objects
+def track_objects(contours, frame):
+    global color_history, size_history,tracked_objects,detected_object,j,_id_counter
+    objects = []
+    #convert contours to list that can be tracked
+    for cnt in contours:
+        if cv2.contourArea(cnt) > 500:
+            (x, y, w, h) = cv2.boundingRect(cnt)
+            cx = x + w // 2
+            cy = y + h // 2
+            objects.append((cx, cy, cnt))
 
-while cap.isOpened():
+    # If no objects detected, return empty tracked dict
+    if not objects:
+        return tracked_objects
+
+    # Check for object tracking
+    for obj_id, [prev_cx, prev_cy, _, stable_count,cnt] in tracked_objects.items():
+        # Find nearest in new frame
+        distances = [np.sqrt((cx - prev_cx) ** 2 + (cy - prev_cy) ** 2)
+                      for (cx, cy, _) in objects]
+        if distances:
+            min_idx = np.argmin(distances)
+            if distances[min_idx] < 20:  # Max allowed displacement
+                new_cx, new_cy, new_cnt = objects[min_idx]
+                tracked_objects[obj_id][0] = new_cx  # Update X
+                tracked_objects[obj_id][1] = new_cy  # Update Y
+                tracked_objects[obj_id][3] += 1      # Increment stability count
+                tracked_objects[obj_id][4] = new_cnt  # Update contour
+                del objects[min_idx]
+  # Exit loop after updating this object
+            else:
+                tracked_objects[obj_id] = [prev_cx, prev_cy, False,-1,None]
+
+    for obj_id in list(tracked_objects.keys()):
+        if not tracked_objects[obj_id][2]:
+            del tracked_objects[obj_id]  # Remove objects that are not found in current frame
+
+
+
+    for cx, cy, cnt in objects:
+        new_id = _id_counter
+        _id_counter += 1
+        tracked_objects[new_id] = [cx, cy, True, 0, cnt]  # Added contour storage
+
+    for new_id, [cx, cy, _, stable_count,cnt] in tracked_objects.items():
+        if stable_count == STABILITY_THRESHOLD:
+            if cnt is None:
+                    continue
+            detected_object[j] = (cx, cy)  # True indicates this is a object that exists in the current frame
+            # Initialize color buffers
+            hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+            mask = np.zeros(frame.shape[:2], dtype=np.uint8)
+            cv2.drawContours(mask, [cnt], -1, 255, -1)
+            mean_color = cv2.mean(hsv_frame, mask=mask)[:3]
+
+            color_name = "Unknown"  # Default value
+
+            h = mean_color[0]
+            s = mean_color[1]
+            v = mean_color[2]
+
+            if (10 >= h >= 0 and 255 >= s >= 100 and 255 >= v >= 100):
+                color_name = "Red(Lower)"
+            elif (179 > h >= 160 and 255 >= s >= 100 and 255 >= v >= 100):
+                color_name = "Red(Upper)"
+            elif (25 >= h >= 11 and 255 >= s >= 100 and 255 >= v >= 100):
+                color_name = "Orange"
+            elif (35 >= h >= 26 and 255 >= s >= 100 and 255 >= v >= 100):
+                color_name = "Yellow"
+            elif (85 >= h >= 36 and 255 >= s >= 100 and 255 >= v >= 100):
+                color_name = "Green"
+            elif (100 >= h >= 86 and 255 >= s >= 100 and 255 >= v >= 100):
+                color_name = "Cyan"
+            elif (130 >= h >= 101 and 255 >= s >= 100 and 255 >= v >= 100):
+                color_name = "Blue"
+            elif (145 >= h >= 131 and 255 >= s >= 100 and 255 >= v >= 100):
+                color_name = "Purple"
+            elif (159 >= h >= 146 and 255 >= s >= 100 and 255 >= v >= 100):
+                color_name = "Pink"
+            elif (20 >= h >= 10 and 255 >= s >= 100 and 150 >= v >= 20):
+                color_name = "Brown"
+            elif (179 >= h >= 0 and 30 >= s >= 0 and 255 >= v >= 200):
+                color_name = "White"
+            elif (179 >= h >= 0 and 50 >= s >= 0 and 200 >= v >= 50):
+                color_name = "Grey"
+            elif (179 >= h >= 0 and 255 >= s >= 0 and 50 >= v >= 0):
+                color_name = "Black"
+
+            color_history[j] = (color_name,mean_color)
+
+            area = cv2.contourArea(cnt)
+            perimeter = cv2.arcLength(cnt, True)
+            size_history[j] = (area, perimeter)
+            j += 1
+            
+        else:
+            continue
+
+    return tracked_objects
+
+while frame_count > 119:
     ret, frame = cap.read()
     if not ret:
         break
 
-    # Foreground mask
+    # Compute absolute difference between current frame and static background
     diff = cv2.absdiff(frame, median_background)
     gray = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
+
+    #apply gaussian blur to reduce noise
     blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+
+    # Threshold the blurred image to create a binary mask
     _, foreground_mask = cv2.threshold(blurred, 30, 255, cv2.THRESH_BINARY)
+
     contours, _ = cv2.findContours(foreground_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-    valid_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > 500]
-
-    # Match current contours with tracked objects
-    matched_ids = set()
-    for curr_cnt in valid_contours:
-        x2, y2, w2, h2 = cv2.boundingRect(curr_cnt)
-        matched = False
-        for obj_id, data in tracked_objects.items():
-            x1, y1, w1, h1 = cv2.boundingRect(data['contour'])
-            if (abs(x1 - x2) < 20 and abs(y1 - y2) < 20 and
-                abs(w1 - w2) < 20 and abs(h1 - h2) < 20):
-                tracked_objects[obj_id]['contour'] = curr_cnt
-                tracked_objects[obj_id]['position'] = (x2, y2)
-                tracked_objects[obj_id]['missed_frames'] = 0
-                matched_ids.add(obj_id)
-                matched = True
-                break
-        if not matched:
-            tracked_objects[next_id] = {
-                'contour': curr_cnt,
-                'position': (x2, y2),
-                'missed_frames': 0
-            }
-            matched_ids.add(next_id)
-            next_id += 1
-
-    # Increment missed frames for unmatched objects
-    to_delete = []
-    for obj_id in tracked_objects:
-        if obj_id not in matched_ids:
-            tracked_objects[obj_id]['missed_frames'] += 1
-            if tracked_objects[obj_id]['missed_frames'] > max_missed_frames:
-                to_delete.append(obj_id)
-
-    # Remove lost objects
-    for obj_id in to_delete:
-        del tracked_objects[obj_id]
-
-    # Display tracked objects with mean color boxes
-    count = 0
-    for obj_id, data in tracked_objects.items():
-        cnt = data['contour']
-        mask = np.zeros(frame.shape[:2], dtype=np.uint8)
-        cv2.drawContours(mask, [cnt], -1, 255, -1)
-        mean_color = cv2.mean(frame, mask=mask)[:3]
-        mean_color_int = tuple(map(int, mean_color))
-
-        rect_top_left = (0, 0 + 50 * count)
-        rect_bottom_right = (50, 50 + 50 * count)
-        cv2.putText(frame, f"box {count} (ID:{obj_id})", (55, 50 + 50 * count), 1, 1, (255, 255, 0))
-        cv2.rectangle(frame, rect_top_left, rect_bottom_right, mean_color_int, thickness=-1)
-        count += 1
-
-        # Draw bounding box with size category
-        x, y, w, h = cv2.boundingRect(cnt)
+    valid_contours = []
+    for cnt in contours:
         area = cv2.contourArea(cnt)
-        if 500 < area < 1000:
-            color = (255, 0, 0)
-            label = "Small"
-        elif 1000 < area < 2000:
-            color = (0, 255, 0)
-            label = "Medium"
+        if area > 500:
+            valid_contours.append(cnt)
+    # Track objects
+    tracked_objects = track_objects(valid_contours, frame)
+    count = 0
+    for cnt in valid_contours:
+        count += 1
+    #for cnt in valid_contours:
+        (x, y, w, h) = cv2.boundingRect(cnt)
+        area = cv2.contourArea(cnt)
+        if 500<area<1000:
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
+            cv2.putText(frame,"Small,box number" + str(count),(x,y),1,1,(255,255,0))
+        elif 1000<area<2000:
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            cv2.putText(frame,"Medium,box number" + str(count),(x,y),1,1,(255,255,0))
         else:
-            color = (0, 0, 255)
-            label = "Large"
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
+            cv2.putText(frame,"Large,box number" + str(count),(x,y),1,1,(255,255,0))
+        
+        #Let y be the variable for length across conveyer belt
+        #y=0 to y=y1 - Lane 1
+        #y=y1 to y=y2 - Lane 2
+        #y=y2 to y=y3 - Lane 3
+        #y=y3 to y=y4 - Lane 4
 
-        cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
-        cv2.putText(frame, f"{label}, ID:{obj_id}", (x, y), 1, 1, (255, 255, 0))
+        lane=[]
+        y_end=y+h
+        if y1>y>=0:
+            if y1>y_end:
+                lane.append(1)
+            elif y2>y_end:
+                lane.append(1)
+                lane.append(2)
+            elif y3>y_end:
+                lane.append(1)
+                lane.append(2)
+                lane.append(3)
+            else:
+                lane.append(1)
+                lane.append(2)
+                lane.append(3)
+                lane.append(4)
+        elif y2>y:
+            if y2>y_end:
+                lane.append(2)
+            elif y3>y_end:
+                lane.append(2)
+                lane.append(3)
+            else:
+                lane.append(2)
+                lane.append(3)
+                lane.append(4)
+        elif y3>y:
+            if y3>y_end:
+                lane.append(3)
+            else:
+                lane.append(3)
+                lane.append(4)
+        else:
+            lane.append(4)
 
+
+    # Display the original frame with detected foreground
     cv2.imshow('Foreground', frame)
     cv2.imshow('Foreground Mask', foreground_mask)
-
-    if cv2.waitKey(1) == 13:  # Enter key
+    count = 0
+    key = cv2.waitKey(1)
+    if key == 13:
         break
-
+    #print("Tracked Objects:", tracked_objects])
+    print("Detected Objects:", detected_object)
+    print("Color History:", color_history)
+    print("Size History:", size_history)
+    print("\n\n")
+    frame_count += 1
 cap.release()
 cv2.destroyAllWindows()
