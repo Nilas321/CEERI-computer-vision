@@ -123,15 +123,15 @@ def track_objects(contours, frame):
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
             (x, y, w, h) = cv2.boundingRect(cnt)
             area = cv2.contourArea(cnt)
-            if 500<area<1000:
+            if 1500<area<2000:
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
-                cv2.putText(frame,"Small,box number" + str(count) + "colour" + color_name,(x,y-10),cv2.FONT_HERSHEY_SIMPLEX,0.5,(255,255,0))
-            elif 1000<area<2000:
+                cv2.putText(frame,"Small,colour: " + color_name,(x,y-10),cv2.FONT_HERSHEY_SIMPLEX,0.5,(255,255,0))
+            elif 2000<area<6000:
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                cv2.putText(frame,"Medium,box number" + str(count)  + "colour" + color_name,(x,y -10),cv2.FONT_HERSHEY_SIMPLEX,0.5,(255,255,0))
+                cv2.putText(frame,"Medium,colour: " + color_name,(x,y -10),cv2.FONT_HERSHEY_SIMPLEX,0.5,(255,255,0))
             else:
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
-                cv2.putText(frame,"Large,box number" + str(count)  + "colour" + color_name,(x,y -10),cv2.FONT_HERSHEY_SIMPLEX,0.5,(255,255,0))
+                cv2.putText(frame,"Large,colour: " + color_name,(x,y -10),cv2.FONT_HERSHEY_SIMPLEX,0.5,(255,255,0))
 
             
         else:
