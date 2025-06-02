@@ -170,20 +170,25 @@ while frame_count > 119:
             cv2.putText(frame,"Large,box number" + str(count),(x,y),1,1,(255,255,0))
         
         #Let y be the variable for length across conveyer belt
-        #y=0 to y=y1 - Lane 1
-        #y=y1 to y=y2 - Lane 2
-        #y=y2 to y=y3 - Lane 3
-        #y=y3 to y=y4 - Lane 4
+        #x=27 to x=151 - Lane 1
+        #x=152 to x=291 - Lane 2
+        #x=292 to x=427 - Lane 3
+        #x=428 to x=549 - Lane 4
+
+        x1=151
+        x2=291
+        x3=427
+        x4=549
 
         lane=[]
-        y_end=y+h
-        if y1>y>=0:
-            if y1>y_end:
+        x_end=x+w
+        if x1>x>=27:
+            if x1>x_end:
                 lane.append(1)
-            elif y2>y_end:
+            elif x2>x_end:
                 lane.append(1)
                 lane.append(2)
-            elif y3>y_end:
+            elif x3>x_end:
                 lane.append(1)
                 lane.append(2)
                 lane.append(3)
@@ -192,18 +197,18 @@ while frame_count > 119:
                 lane.append(2)
                 lane.append(3)
                 lane.append(4)
-        elif y2>y:
-            if y2>y_end:
+        elif x2>x:
+            if x2>x_end:
                 lane.append(2)
-            elif y3>y_end:
+            elif x3>x_end:
                 lane.append(2)
                 lane.append(3)
             else:
                 lane.append(2)
                 lane.append(3)
                 lane.append(4)
-        elif y3>y:
-            if y3>y_end:
+        elif x3>x:
+            if x3>x_end:
                 lane.append(3)
             else:
                 lane.append(3)

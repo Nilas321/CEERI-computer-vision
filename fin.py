@@ -122,6 +122,54 @@ def track_objects(contours, frame):
             (x, y, w, h) = cv2.boundingRect(cnt)
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
             (x, y, w, h) = cv2.boundingRect(cnt)
+
+            #Let x be the variable for length across conveyer belt
+            #x=27 to x=151 - Lane 1
+            #x=152 to x=291 - Lane 2
+            #x=292 to x=427 - Lane 3
+            #x=428 to x=549 - Lane 4
+
+            x1=151
+            x2=291
+            x3=427
+            x4=549
+
+            lane=[]
+            x_end=x+w
+            if x1>x>=27:
+                if x1>x_end:
+                    lane.append(1)
+                elif x2>x_end:
+                    lane.append(1)
+                    lane.append(2)
+                elif x3>x_end:
+                    lane.append(1)
+                    lane.append(2)
+                    lane.append(3)
+                else:
+                    lane.append(1)
+                    lane.append(2)
+                    lane.append(3)
+                    lane.append(4)
+            elif x2>x:
+                if x2>x_end:
+                    lane.append(2)
+                elif x3>x_end:
+                    lane.append(2)
+                    lane.append(3)
+                else:
+                    lane.append(2)
+                    lane.append(3)
+                    lane.append(4)
+            elif x3>x:
+                if x3>x_end:
+                    lane.append(3)
+                else:
+                    lane.append(3)
+                    lane.append(4)
+            else:
+                lane.append(4)
+
             area = cv2.contourArea(cnt)
 
             #Let y be the variable for length across conveyer belt
