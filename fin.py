@@ -9,7 +9,7 @@ color_history = {}
 size_history = {}
 tracked_objects = {}
 detected_object ={}
-STABILITY_THRESHOLD = 20
+STABILITY_THRESHOLD = 30
 # Read video
 cap = cv2.VideoCapture(0)  # 0 for default camera
 frame_count = 0
@@ -58,6 +58,7 @@ def track_objects(contours, frame):
                 tracked_objects[obj_id][1] = new_cy  # Update Y
                 tracked_objects[obj_id][3] += 1      # Increment stability count
                 tracked_objects[obj_id][4] = new_cnt  # Update contour
+                
                 del objects[min_idx]
   # Exit loop after updating this object
             else:
@@ -66,20 +67,17 @@ def track_objects(contours, frame):
     for obj_id in list(tracked_objects.keys()):
         if not tracked_objects[obj_id][2]:
             del tracked_objects[obj_id]  # Remove objects that are not found in current frame
-
-
-
+    # Add new objects
     for cx, cy, cnt in objects:
         new_id = _id_counter
         _id_counter += 1
         tracked_objects[new_id] = [cx, cy, True, 0, cnt]  # Added contour storage
 
     for new_id, [cx, cy, _, stable_count,cnt] in tracked_objects.items():
-        if stable_count == STABILITY_THRESHOLD:
+
+        if stable_count > STABILITY_THRESHOLD:
             if cnt is None:
                     continue
-            detected_object[j] = (cx, cy)  # True indicates this is a object that exists in the current frame
-            # Initialize color buffers
             hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
             mask = np.zeros(frame.shape[:2], dtype=np.uint8)
             cv2.drawContours(mask, [cnt], -1, 255, -1)
@@ -117,13 +115,24 @@ def track_objects(contours, frame):
                 color_name = "Grey"
             elif (180 >= h >= 0 and 255 >= s >= 0 and 50 >= v >= 0):
                 color_name = "Black"
-
-            color_history[j] = (color_name,mean_color)
-
             area = cv2.contourArea(cnt)
             perimeter = cv2.arcLength(cnt, True)
-            size_history[j] = (area, perimeter)
-            j += 1
+
+            # Draw rectangle and label
+            (x, y, w, h) = cv2.boundingRect(cnt)
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            (x, y, w, h) = cv2.boundingRect(cnt)
+            area = cv2.contourArea(cnt)
+            if 500<area<1000:
+                cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
+                cv2.putText(frame,"Small,box number" + str(count) + "colour" + color_name,(x,y-10),cv2.FONT_HERSHEY_SIMPLEX,1,(255,255,0))
+            elif 1000<area<2000:
+                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                cv2.putText(frame,"Medium,box number" + str(count)  + "colour" + color_name,(x,y -10),cv2.FONT_HERSHEY_SIMPLEX,1,(255,255,0))
+            else:
+                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
+                cv2.putText(frame,"Large,box number" + str(count)  + "colour" + color_name,(x,y -10),cv2.FONT_HERSHEY_SIMPLEX,1,(255,255,0))
+
             
         else:
             continue
@@ -157,18 +166,7 @@ while frame_count > 119:
     for cnt in valid_contours:
         count += 1
     #for cnt in valid_contours:
-        (x, y, w, h) = cv2.boundingRect(cnt)
-        area = cv2.contourArea(cnt)
-        if 500<area<1000:
-            cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
-            cv2.putText(frame,"Small,box number" + str(count),(x,y),1,1,(255,255,0))
-        elif 1000<area<2000:
-            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-            cv2.putText(frame,"Medium,box number" + str(count),(x,y),1,1,(255,255,0))
-        else:
-            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
-            cv2.putText(frame,"Large,box number" + str(count),(x,y),1,1,(255,255,0))
-
+        
     # Display the original frame with detected foreground
     cv2.imshow('Foreground', frame)
     cv2.imshow('Foreground Mask', foreground_mask)
@@ -177,10 +175,11 @@ while frame_count > 119:
     if key == 13:
         break
     #print("Tracked Objects:", tracked_objects])
-    print("Detected Objects:", detected_object)
+    #print("Detected Objects:", detected_object)
     print("Color History:", color_history)
     print("Size History:", size_history)
     print("\n\n")
     frame_count += 1
 cap.release()
 cv2.destroyAllWindows()
+
