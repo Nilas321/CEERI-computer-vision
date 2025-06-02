@@ -171,10 +171,10 @@ def track_objects(contours, frame):
             else:
                 lane.append(4)
 
-            if 500<area<1000:
+            if 500<area<2000:
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
                 cv2.putText(frame,"Small " + "Lane: " + str(lane) + " Colour: " + color_name,(x,y-10),cv2.FONT_HERSHEY_SIMPLEX,0.5,(255,255,0))
-            elif 1000<area<2000:
+            elif 2000<area<6000:
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
                 cv2.putText(frame,"Medium " + "Lane: " + str(lane) + " Colour: " + color_name,(x,y -10),cv2.FONT_HERSHEY_SIMPLEX,0.5,(255,255,0))
             else:
@@ -224,9 +224,9 @@ while frame_count > 119:
         break
     #print("Tracked Objects:", tracked_objects])
     #print("Detected Objects:", detected_object)
-    print("Color History:", color_history)
-    print("Size History:", size_history)
-    print("\n\n")
+    #print("Color History:", color_history)
+    #print("Size History:", size_history)
+    #print("\n\n")
     frame_count += 1
 cap.release()
 cv2.destroyAllWindows()
