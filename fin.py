@@ -27,7 +27,7 @@ for _ in range(120):
 median_background = np.median(background_frames, axis=0).astype(np.uint8)
 
 #display the median background
-cv2.imshow('Median Background', median_background)
+#cv2.imshow('Median Background', median_background)
 
 #function to track objects
 def track_objects(contours, frame):
@@ -265,7 +265,7 @@ while frame_count > 119:
         
     # Display the original frame with detected foreground
     cv2.imshow('Foreground', frame)
-    cv2.imshow('Foreground Mask', foreground_mask)
+    #cv2.imshow('Foreground Mask', foreground_mask)
     count = 0
     key = cv2.waitKey(1)
     if key == 13:
