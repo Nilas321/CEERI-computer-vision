@@ -9,7 +9,8 @@ color_history = {}
 size_history = {}
 tracked_objects = {}
 detected_object ={}
-STABILITY_THRESHOLD = 30
+STABILITY_THRESHOLD = 12
+output_string=""
 # Read video
 cap = cv2.VideoCapture(0,cv2.CAP_DSHOW)  # 0 for default camera
 frame_count = 0
@@ -31,7 +32,7 @@ cv2.imshow('Median Background', median_background)
 
 #function to track objects
 def track_objects(contours, frame):
-    global color_history, size_history,tracked_objects,detected_object,j,_id_counter
+    global color_history, size_history,tracked_objects,detected_object,j,_id_counter,output_string
     objects = []
     #convert contours to list that can be tracked
     for cnt in contours:
@@ -139,85 +140,78 @@ def track_objects(contours, frame):
             if x1>x>=27:
                 if x1>x_end:
                     lane.append(1)
+                    if y==500:
+                        output_string="10000000"
+                    if y+h==500:
+                        output_string="00000000"
                 elif x2>x_end:
                     lane.append(1)
                     lane.append(2)
+                    if y==500:
+                        output_string="11000000"
+                    if y+h==500:
+                        output_string="00000000"
                 elif x3>x_end:
                     lane.append(1)
                     lane.append(2)
                     lane.append(3)
+                    if y==500:
+                        output_string="11100000"
+                    if y+h==500:
+                        output_string="00000000"
                 else:
                     lane.append(1)
                     lane.append(2)
                     lane.append(3)
                     lane.append(4)
+                    if y==500:
+                        output_string="11110000"
             elif x2>x:
                 if x2>x_end:
                     lane.append(2)
+                    if y==500:
+                        output_string="01000000"
+                    if y+h==500:
+                        output_string="00000000"
                 elif x3>x_end:
                     lane.append(2)
                     lane.append(3)
+                    if y==500:
+                        output_string="01100000"
+                    if y+h==500:
+                        output_string="00000000"
                 else:
                     lane.append(2)
                     lane.append(3)
                     lane.append(4)
+                    if y==500:
+                        output_string="01110000"
+                    if y+h==500:
+                        output_string="00000000"
             elif x3>x:
                 if x3>x_end:
                     lane.append(3)
+                    if y==500:
+                        output_string="00100000"
+                    if y+h==500:
+                        output_string="00000000"
                 else:
                     lane.append(3)
                     lane.append(4)
+                    if y==500:
+                        output_string="00110000"
+                    if y+h==500:
+                        output_string="00000000"
             else:
                 lane.append(4)
+                if y==500:
+                    output_string="00010000"
+                if y+h==500:
+                        output_string="00000000"
+
+            #y=500 be the line
 
             area = cv2.contourArea(cnt)
-
-            #Let y be the variable for length across conveyer belt
-            #y=0 to y=y1 - Lane 1
-            #y=y1 to y=y2 - Lane 2
-            #y=y2 to y=y3 - Lane 3
-            #y=y3 to y=y4 - Lane 4
-
-            x1=147
-            x2=295
-            x3=436
-            x4=546
-
-            lane=[]
-            x_end=x+w
-            if x1>x>=27:
-                if x1>x_end:
-                    lane.append(1)
-                elif x2>x_end:
-                    lane.append(1)
-                    lane.append(2)
-                elif x3>x_end:
-                    lane.append(1)
-                    lane.append(2)
-                    lane.append(3)
-                else:
-                    lane.append(1)
-                    lane.append(2)
-                    lane.append(3)
-                    lane.append(4)
-            elif x2>x:
-                if x2>x_end:
-                    lane.append(2)
-                elif x3>x_end:
-                    lane.append(2)
-                    lane.append(3)
-                else:
-                    lane.append(2)
-                    lane.append(3)
-                    lane.append(4)
-            elif x3>x:
-                if x3>x_end:
-                    lane.append(3)
-                else:
-                    lane.append(3)
-                    lane.append(4)
-            else:
-                lane.append(4)
 
             if 500<area<2000:
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
@@ -258,11 +252,9 @@ while frame_count > 119:
             valid_contours.append(cnt)
     # Track objects
     tracked_objects = track_objects(valid_contours, frame)
-    count = 0
-    for cnt in valid_contours:
-        count += 1
-    #for cnt in valid_contours:
-        
+    
+
+
     # Display the original frame with detected foreground
     cv2.imshow('Foreground', frame)
     cv2.imshow('Foreground Mask', foreground_mask)
