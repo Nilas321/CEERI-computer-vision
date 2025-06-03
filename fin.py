@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 from collections import deque
+import time
 
 j=0
 _id_counter = 1
@@ -29,6 +30,10 @@ median_background = np.median(background_frames, axis=0).astype(np.uint8)
 
 #display the median background
 #cv2.imshow('Median Background', median_background)
+
+def send_string_with_delay(string, delay_seconds):
+        time.sleep(delay_seconds)  # Delay sending
+        return string
 
 #function to track objects
 def track_objects(contours, frame):
@@ -252,7 +257,7 @@ while frame_count > 119:
             valid_contours.append(cnt)
     # Track objects
     tracked_objects = track_objects(valid_contours, frame)
-    
+    send_string_with_delay(output_string, 0.5)  # Simulate sending output string with delay
 
 
     # Display the original frame with detected foreground
