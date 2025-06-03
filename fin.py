@@ -145,76 +145,78 @@ def track_objects(contours, frame):
             if x1>x>=27:
                 if x1>x_end:
                     lane.append(1)
-                    if y==500:
+                    if y+h>=35>=y:
                         output_string="10000000"
-                    if y+h==500:
+                    else:
                         output_string="00000000"
                 elif x2>x_end:
                     lane.append(1)
                     lane.append(2)
-                    if y==500:
+                    if y+h>=35>=y:
                         output_string="11000000"
-                    if y+h==500:
+                    else:
                         output_string="00000000"
                 elif x3>x_end:
                     lane.append(1)
                     lane.append(2)
                     lane.append(3)
-                    if y==500:
+                    if y+h>=35>=y:
                         output_string="11100000"
-                    if y+h==500:
+                    else:
                         output_string="00000000"
                 else:
                     lane.append(1)
                     lane.append(2)
                     lane.append(3)
                     lane.append(4)
-                    if y==500:
+                    if y+h>=35>=y:
                         output_string="11110000"
+                    else:
+                        output_string="00000000"
             elif x2>x:
                 if x2>x_end:
                     lane.append(2)
-                    if y==500:
+                    if y+h>=35>=y:
                         output_string="01000000"
-                    if y+h==500:
+                    else:
                         output_string="00000000"
                 elif x3>x_end:
                     lane.append(2)
                     lane.append(3)
-                    if y==500:
+                    if y+h>=35>=y:
                         output_string="01100000"
-                    if y+h==500:
+                    else:
                         output_string="00000000"
                 else:
                     lane.append(2)
                     lane.append(3)
                     lane.append(4)
-                    if y==500:
+                    if y+h>=35>=y:
                         output_string="01110000"
-                    if y+h==500:
+                    else:
                         output_string="00000000"
             elif x3>x:
                 if x3>x_end:
                     lane.append(3)
-                    if y==500:
+                    if y+h>=35>=y:
                         output_string="00100000"
-                    if y+h==500:
+                    else:
                         output_string="00000000"
                 else:
                     lane.append(3)
                     lane.append(4)
-                    if y==500:
+                    if y+h>=35>=y:
                         output_string="00110000"
-                    if y+h==500:
+                    else:
                         output_string="00000000"
             else:
                 lane.append(4)
-                if y==500:
+                if y+h>=35>=y:
                     output_string="00010000"
-                if y+h==500:
-                        output_string="00000000"
+                else:
+                    output_string="00000000"
 
-            #y=500 be the line
+            #y=35 be the line
 
             area = cv2.contourArea(cnt)
 
@@ -227,7 +229,7 @@ def track_objects(contours, frame):
             else:
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
                 cv2.putText(frame,"Large " + "Lane: " + str(lane) + " Colour: " + color_name,(x,y -10),cv2.FONT_HERSHEY_SIMPLEX,0.5,(255,255,0))
-
+            print(output_string)
             
         else:
             continue
@@ -257,7 +259,7 @@ while frame_count > 119:
             valid_contours.append(cnt)
     # Track objects
     tracked_objects = track_objects(valid_contours, frame)
-    send_string_with_delay(output_string, 0.5)  # Simulate sending output string with delay
+    #send_string_with_delay(output_string, 0.5)  # Simulate sending output string with delay
 
 
     # Display the original frame with detected foreground
