@@ -1,3 +1,4 @@
+import time
 import cv2
 import numpy as np
 
@@ -17,7 +18,9 @@ while True:
 
     _,threshold=cv2.threshold(gray_frame,200,255,cv2.THRESH_BINARY)
     #threshold=cv2.bitwise_not(threshold)
-
+    def send_string_with_delay(string, delay_seconds):
+        time.sleep(delay_seconds)  # Delay sending
+        return string  
     #detect objects
     contours,_=cv2.findContours(threshold,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
     for cnt in contours:
