@@ -10,7 +10,7 @@ while True:
                        #boolean(indicating whether the frame captured successfully)_frame(NumPy array representing the captured image)'''
                        #_ contains the boolean value, frame contains the image array
 
-    req_area=frame[194:438,210:590]
+    req_area=frame[1:221,48:551]
     #x1=210 , y1=194     top-left point
     #x2=590 , y2=438     bottom-right point
 
@@ -47,8 +47,8 @@ while True:
         if event == cv2.EVENT_LBUTTONDOWN:
             print(f'Coordinates: ({x}, {y})')
         # You can also draw a circle or mark the point on the image, if needed
-        cv2.circle(frame, (x, y), 3, (0, 0, 255), -1) # Mark the clicked point
-    cv2.imshow('image', frame)
+        cv2.circle(req_area, (x, y), 3, (0, 0, 255), -1) # Mark the clicked point
+    cv2.imshow('image', req_area)
     cv2.setMouseCallback('image', click_event)
 
     key=cv2.waitKey(1) #wait for 1ms to press a key

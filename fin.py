@@ -4,22 +4,23 @@ from collections import deque
 import time
 
 j=0
+frame_count = 0
 _id_counter = 1
 # Temporal smoothing buffers
 color_history = {}
 size_history = {}
 tracked_objects = {}
 detected_object ={}
-STABILITY_THRESHOLD = 12
-output_string=""
+STABILITY_THRESHOLD = 5
+output_string="1"
 # Read video
 cap = cv2.VideoCapture(0,cv2.CAP_DSHOW)  # 0 for default camera
-frame_count = 0
 
 # Collect first 120 frames
 background_frames = []
-for _ in range(120):
+for _ in range(300):
     ret, frame = cap.read()
+    #req_area=frame[1:221,48:551]
     if not ret:
         break
     background_frames.append(frame)
@@ -27,7 +28,6 @@ for _ in range(120):
 
 # Compute median background
 median_background = np.median(background_frames, axis=0).astype(np.uint8)
-
 #display the median background
 #cv2.imshow('Median Background', median_background)
 
@@ -228,21 +228,24 @@ def track_objects(contours, frame):
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
                 cv2.putText(frame,"Large " + "Lane: " + str(lane) + " Colour: " + color_name,(x,y -10),cv2.FONT_HERSHEY_SIMPLEX,0.5,(255,255,0))
 
-            
+            #print(output_string)
+    
         else:
             continue
 
     return tracked_objects
 
+count = 0
+
 while frame_count > 119:
     ret, frame = cap.read()
     if not ret:
         break
-
     # Compute absolute difference between current frame and static background
+    #req_area=frame[1:221,48:551]
     diff = cv2.absdiff(frame, median_background)
     gray = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
-
+    cv2.putText(frame,str(count) ,(50,100),cv2.FONT_HERSHEY_SIMPLEX,0.5,(255,255,0))
     #apply gaussian blur to reduce noise
     blurred = cv2.GaussianBlur(gray, (5, 5), 0)
 
@@ -257,13 +260,13 @@ while frame_count > 119:
             valid_contours.append(cnt)
     # Track objects
     tracked_objects = track_objects(valid_contours, frame)
-    send_string_with_delay(output_string, 0.5)  # Simulate sending output string with delay
+    # send_string_with_delay(output_string, 0.5)  # Simulate sending output string with delay
 
 
     # Display the original frame with detected foreground
     cv2.imshow('Foreground', frame)
-    #cv2.imshow('Foreground Mask', foreground_mask)
-    count = 0
+    cv2.imshow('Foreground Mask', foreground_mask)
+    count += 1
     key = cv2.waitKey(1)
     if key == 13:
         break
@@ -272,6 +275,6 @@ while frame_count > 119:
     #print("Color History:", color_history)
     #print("Size History:", size_history)
     #print("\n\n")
-    frame_count += 1
+
 cap.release()
 cv2.destroyAllWindows()

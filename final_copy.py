@@ -168,6 +168,8 @@ while frame_count > 119:
         else:
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
             cv2.putText(frame,"Large,box number" + str(count),(x,y),1,1,(255,255,0))
+        ]
+        
         
         #Let x be the variable for length across conveyer belt
         #x=27 to x=151 - Lane 1
