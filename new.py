@@ -12,6 +12,18 @@ tracked_objects = {}
 detected_object ={}
 STABILITY_THRESHOLD = 12
 output_string=""
+count = 0
+
+#create a function to check if the given frame is same as reference frame, and return the inverse of the boolean value if similar
+def is_frame_similar(frame, reference_frame,bg_synced, threshold=1100000):
+    diff = cv2.absdiff(frame, reference_frame)
+    score = np.sum(diff)
+    print(score/100000)
+
+    if score < threshold:
+        return not bg_synced
+    else:
+        return bg_synced
 
 def track_objects(contours, frame):
     global color_history, size_history,tracked_objects,detected_object,j,_id_counter,output_string
@@ -201,14 +213,18 @@ while True:
     if not ret_real:
         break
 
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
     real_gray = cv2.cvtColor(real_frame, cv2.COLOR_BGR2GRAY)
 
     if not bg_synced:
         # Step 1: Check similarity between current real frame and reference background frame
         diff = cv2.absdiff(real_gray, bg_gray)
         score = np.sum(diff)
+        print(score/100000)
 
-        if score < 500000:  # ✅ Tune this threshold based on your setup
+        if score < 1100000:  # ✅ Tune this threshold based on your setup
             print("Background synced!")
             bg_synced = True
         else:
@@ -220,8 +236,8 @@ while True:
             continue  # Keep checking next live frame
 
     # Step 2: Once synced, perform frame-by-frame subtraction
-    bg_cap.set(cv2.CAP_PROP_POS_FRAMES, bg_index)
-    ret_bg, bg_frame = bg_cap.read()
+    #bg_cap.set(cv2.CAP_PROP_POS_FRAMES, bg_index)
+    #ret_bg, bg_frame = bg_cap.read()
 
     if not ret_bg:
         # Loop background video
@@ -251,7 +267,8 @@ while True:
 
     # Display the original frame with detected foreground
     cv2.imshow('Foreground', real_frame)
-    cv2.imshow('Foreground Mask', foreground_mask)
+    cv2.imshow('backround',bg_frame)
+    #cv2.imshow('Foreground Mask', foreground_mask)
     count += 1
     key = cv2.waitKey(1)
     if key == 13:
