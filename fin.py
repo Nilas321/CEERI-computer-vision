@@ -10,7 +10,7 @@ color_history = {}
 size_history = {}
 tracked_objects = {}
 detected_object ={}
-STABILITY_THRESHOLD = 12
+STABILITY_THRESHOLD = 3
 output_string=""
 # Read video
 cap = cv2.VideoCapture(0,cv2.CAP_DSHOW)  # 0 for default camera
@@ -264,14 +264,14 @@ while frame_count > 119:
 
     # Display the original frame with detected foreground
     cv2.imshow('Foreground', frame)
-    #cv2.imshow('Foreground Mask', foreground_mask)
+    cv2.imshow('Foreground Mask', foreground_mask)
     count = 0
     key = cv2.waitKey(1)
     if key == 13:
         break
     #print("Tracked Objects:", tracked_objects])
     #print("Detected Objects:", detected_object)
-    #print("Color History:", color_history)
+    print("Color History:", color_history)
     #print("Size History:", size_history)
     #print("\n\n")
     frame_count += 1
