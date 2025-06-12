@@ -11,7 +11,6 @@ size_history = {}
 tracked_objects = {}
 detected_object ={}
 STABILITY_THRESHOLD = 3
-output_string=""
 # Read video
 cap = cv2.VideoCapture(0,cv2.CAP_DSHOW)  # 0 for default camera
 frame_count = 0
@@ -135,86 +134,30 @@ def track_objects(contours, frame):
             #x=292 to x=427 - Lane 3
             #x=428 to x=549 - Lane 4
 
-            x1=151
-            x2=291
-            x3=427
-            x4=549
+            x1=215
+            x2=383
+            x3=551
 
             lane=[]
             x_end=x+w
             if x1>x>=27:
                 if x1>x_end:
                     lane.append(1)
-                    if y+h>=35>=y:
-                        output_string="10000000"
-                    else:
-                        output_string="00000000"
                 elif x2>x_end:
                     lane.append(1)
                     lane.append(2)
-                    if y+h>=35>=y:
-                        output_string="11000000"
-                    else:
-                        output_string="00000000"
-                elif x3>x_end:
-                    lane.append(1)
-                    lane.append(2)
-                    lane.append(3)
-                    if y+h>=35>=y:
-                        output_string="11100000"
-                    else:
-                        output_string="00000000"
                 else:
                     lane.append(1)
                     lane.append(2)
                     lane.append(3)
-                    lane.append(4)
-                    if y+h>=35>=y:
-                        output_string="11110000"
-                    else:
-                        output_string="00000000"
             elif x2>x:
                 if x2>x_end:
                     lane.append(2)
-                    if y+h>=35>=y:
-                        output_string="01000000"
-                    else:
-                        output_string="00000000"
-                elif x3>x_end:
-                    lane.append(2)
-                    lane.append(3)
-                    if y+h>=35>=y:
-                        output_string="01100000"
-                    else:
-                        output_string="00000000"
                 else:
                     lane.append(2)
                     lane.append(3)
-                    lane.append(4)
-                    if y+h>=35>=y:
-                        output_string="01110000"
-                    else:
-                        output_string="00000000"
-            elif x3>x:
-                if x3>x_end:
-                    lane.append(3)
-                    if y+h>=35>=y:
-                        output_string="00100000"
-                    else:
-                        output_string="00000000"
-                else:
-                    lane.append(3)
-                    lane.append(4)
-                    if y+h>=35>=y:
-                        output_string="00110000"
-                    else:
-                        output_string="00000000"
             else:
-                lane.append(4)
-                if y+h>=35>=y:
-                    output_string="00010000"
-                else:
-                    output_string="00000000"
+                lane.append(3)
 
             #y=35 be the line
 
