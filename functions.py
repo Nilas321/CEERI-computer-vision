@@ -116,9 +116,9 @@ def detect_object_properties(tracked_objects, frame):
 #given coordinate of object (x,y,w,h) and coordinates in frame ,x1,x2,x3 create a function that returns in which splice of x axis it is in as lane 1 lane2 lane3 
 
 def get_lane(x,y,w,h):
-    x1 = 151
-    x2 = 291
-    x3 = 427
+    x1=215
+    x2=383
+    x3=551
 
     lane = []
 
@@ -126,7 +126,7 @@ def get_lane(x,y,w,h):
 
     # Only detect lane if object intersects y = 35
     if y <= 35 <= y + h:
-        if x1 > x >= 27:
+        if x1 > x >= 48:
             if x1 > x_end:
                 lane.append(1)
             elif x2 > x_end:
@@ -142,15 +142,8 @@ def get_lane(x,y,w,h):
                 lane.extend([2, 3])
             else:
                 lane.extend([2, 3])
-        elif x3 > x:
-            if x3 > x_end:
-                lane.append(3)
-            else:
-                lane.append(3)
         else:
-
-            # Outside all defined lane regions
-            pass
+            lane.append(3)
     return lane
 
 #a function that outputs lane info, size and color info on the frame 
@@ -177,7 +170,7 @@ def annotate_frame(frame, tracked_objects, object_properties):
 
 def main():
     global tracked_objects
-    cap = cv2.VideoCapture(0)  # Change to your video source
+    cap = cv2.VideoCapture(0,cv2.CAP_DSHOW)  # Change to your video source
     if not cap.isOpened():
         print("Error: Could not open video.")
         return
