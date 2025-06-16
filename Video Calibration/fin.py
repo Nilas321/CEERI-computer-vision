@@ -172,7 +172,6 @@ def track_objects(contours, frame):
             else:
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
                 cv2.putText(frame,"Large " + "Lane: " + str(lane) + " Colour: " + color_name,(x,y -10),cv2.FONT_HERSHEY_SIMPLEX,0.5,(255,255,0))
-            print(output_string)
             
         else:
             continue
@@ -214,7 +213,7 @@ while frame_count > 119:
         break
     #print("Tracked Objects:", tracked_objects])
     #print("Detected Objects:", detected_object)
-    print("Color History:", color_history)
+    #print("Color History:", color_history)
     #print("Size History:", size_history)
     #print("\n\n")
     frame_count += 1
