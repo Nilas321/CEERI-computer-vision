@@ -23,8 +23,6 @@ while cap.isOpened():
     # 4. Run YOLOv5 inference
     results = model(frame, verbose=False)  # Set verbose=False to disable logs
     
-    # 5. Process and visualize results
-    annotated_frame = results[0].plot()  # Auto-draw boxes/labels
     
     for box in results[0].boxes:
         if box.conf < 0.5:  # Confidence threshold
@@ -69,9 +67,26 @@ while cap.isOpened():
         else:
             color = "Purple"
 
-        print(f"Detected color: {color}")
+        #print(f"Detected color: {color}")
+        # Draw rectangle and label
+        (x, y, w, h) = cv2.boundingRect(cnt)
+        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        (x, y, w, h) = cv2.boundingRect(cnt)
+        #put text on the frame of the detected object
+        cv2.putText(frame, f"{color}", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
+
+        #contour area is larger than 5000, print large
+        area = cv2.contourArea(cnt)
+        if area > 5000:
+            size = "Large"
+        elif 2000 < area <= 5000:
+            size = "Medium"
+        else:
+            size = "Small"
+        #print(f"Detected size: {size}")
     # 6. Display output
-    cv2.imshow('YOLOv5 Real-Time Detection', annotated_frame)
+    cv2.imshow('YOLOv5 Real-Time Detection', frame)
     
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
